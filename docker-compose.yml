@@ -1,0 +1,32 @@
+# specifies version of docker-compose
+version: '3.8'
+
+# specify all the services (docker images)
+services:
+  db:
+    image: postgres # to pull down the standard postgres image that comes prepackaged with everything we need for our postgres database
+    ports:
+      - 15432:5432
+    environment:
+      POSTGRES_DB: fastapi_maria_db
+      POSTGRES_USER: maria
+      POSTGRES_PASSWORD: maria_pass
+    healthcheck:
+      test: pg_isready -U maria -d fastapi_maria_db || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  api:
+    build:
+      context: . # specify the path to Docker file
+      dockerfile: api.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 8001:80 #  specify port mappings <host_port>:<container_port>
+    environment:
+      DB_CONN: postgresql://maria:maria_pass@db:5432/fastapi_maria_db
+    volumes:
+      - ./app:/app/app
+
